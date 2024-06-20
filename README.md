@@ -1,97 +1,146 @@
-# Visitor Counter API Documentation
+# Visitor Counter API
 
-## Introduction
-This API provides a simple counter service. It reads, increments, and resets a counter stored in a file (`count.txt`). The counter can be accessed and manipulated via HTTP GET requests. This documentation covers all the endpoints and functionalities of the API.
+The Count API is a simple API that manages a count stored in a file on the server. It allows you to get the current count, increment the count, reset the count, and handle preflight CORS requests.
 
 ## Base URL
+
 ```
-http://localhost:3000
+https://your-domain.com/api/count
 ```
 
 ## Endpoints
 
-### 1. Get and Increment Counter
-```
-GET /
-```
-#### Description:
-Retrieves the current counter value, increments it by one, and then returns the new counter value. If the query parameter `q` is not provided or is empty, this endpoint will read the current count from the file, increment it, and update the file.
+### 1. Get Current Count
 
-#### Parameters:
-- `q`: Optional query parameter.
-  - If not provided or empty, the counter is incremented.
-  - If set to `'reset'`, the counter is reset to 0 and returned.
+Returns the current count stored in the server.
 
-#### Responses:
-- **200 OK**: Returns the current counter value after incrementing or resetting.
-  - Example response: `{ "value": 5 }`
-- **400 Bad Request**: If the value in the file is not a valid number.
-  - Example response: `Invalid count value in file`
-- **500 Internal Server Error**: If there is an error reading or writing the file.
-  - Example response: `Error reading file` or `Error writing file`
+- **URL**
 
-### Example Usage:
-#### Increment Counter
-```
-GET http://localhost:3000/
-```
-#### Reset Counter
-```
-GET http://localhost:3000/?q=reset
-```
-#### Get Counter without Incrementing
-```
-GET http://localhost:3000/?q=any_other_value
-```
+  ```
+  GET /api/count
+  ```
 
-## Setup Instructions
+- **Success Response**
 
-### Prerequisites
-- Node.js (v12 or higher)
-- npm (v6 or higher)
+  - **Code:** 200
+  - **Content:**
+    ```json
+    {
+      "value": 5
+    }
+    ```
 
-### Installation
-1. Clone the repository:
-   ```sh
-   git clone <repository_url>
-   ```
-2. Navigate to the project directory:
-   ```sh
-   cd <project_directory>
-   ```
-3. Install the dependencies:
-   ```sh
-   npm install
-   ```
-4. Create a `count.txt` file in the root directory of the project and initialize it with a number, e.g., `0`.
+- **Error Response**
 
-### Running the Server
-To start the server, run:
-```sh
-npm start
-```
-The server will start on the port specified in the `PORT` environment variable or default to `3000`.
+  - **Code:** 500
+  - **Content:** `Error reading file`
 
-## Code Overview
+### 2. Increment Count
 
-### Dependencies
-- `express`: Fast, unopinionated, minimalist web framework for Node.js
-- `body-parser`: Node.js body parsing middleware
-- `cors`: Middleware to enable Cross-Origin Resource Sharing
-- `fs`: File system module for reading and writing files
+Increments the current count by 1 and returns the updated count.
 
-### Middleware
-- `bodyParser.json()`: Parses incoming requests with JSON payloads.
-- `cors()`: Enables CORS for all routes.
+- **URL**
 
-### File Handling
-- On server startup, the `count.txt` file is read to initialize the in-memory counter.
-- The `fs.watch` method is used to monitor changes to the `count.txt` file and update the in-memory counter accordingly.
-- The current counter value is read from and written to the `count.txt` file in various endpoints to ensure persistence.
+  ```
+  GET /api/count?q=increment
+  ```
 
-## Error Handling
-- Errors in reading or writing the `count.txt` file are logged to the console and return a `500 Internal Server Error` response.
-- Invalid values in the `count.txt` file result in a `400 Bad Request` response.
+- **Success Response**
 
-## Conclusion
-This API provides a simple and effective way to manage a counter through HTTP GET requests, with functionalities to increment, reset, and retrieve the current counter value. The counter state is persisted in a file and monitored for changes, ensuring that the API remains synchronized with the file's contents.
+  - **Code:** 200
+  - **Content:**
+    ```json
+    {
+      "value": 6
+    }
+    ```
+
+- **Error Response**
+
+  - **Code:** 500
+  - **Content:** `Error reading or writing file`
+
+### 3. Reset Count
+
+Resets the count to 0.
+
+- **URL**
+
+  ```
+  GET /api/count?q=reset
+  ```
+
+- **Success Response**
+
+  - **Code:** 200
+  - **Content:**
+    ```json
+    {
+      "value": 0
+    }
+    ```
+
+- **Error Response**
+
+  - **Code:** 500
+  - **Content:** `Error writing file`
+
+### 4. CORS Preflight
+
+Handles CORS preflight requests.
+
+- **URL**
+
+  ```
+  OPTIONS /api/count
+  ```
+
+- **Success Response**
+
+  - **Code:** 200
+  - **Content:** `Preflight OK`
+
+### 5. Error Response
+
+Handles invalid requests and unsupported methods.
+
+- **URL**
+
+  ```
+  Any other method or invalid query parameters
+  ```
+
+- **Error Response**
+
+  - **Code:** 405
+  - **Content:** `Method Not Allowed`
+
+## Usage
+
+- **Example: Get Current Count**
+  ```bash
+  curl -X GET https://your-domain.com/api/count
+  ```
+
+- **Example: Increment Count**
+  ```bash
+  curl -X GET https://your-domain.com/api/count?q=increment
+  ```
+
+- **Example: Reset Count**
+  ```bash
+  curl -X GET https://your-domain.com/api/count?q=reset
+  ```
+
+- **Example: Preflight Request**
+  ```bash
+  curl -X OPTIONS https://your-domain.com/api/count
+  ```
+
+## Notes
+
+- The count is stored in a file on the server.
+- Requests are CORS-enabled to allow all origins.
+- Supported HTTP methods: GET, OPTIONS
+
+---
