@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Get the file path from environment variables
-const countFilePath = path.join(__dirname, process.env.COUNT_FILE_PATH || 'count.txt');
+const countFilePath = path.join(__dirname, process.env.COUNT_FILE_PATH || '../count.txt');
 
 // Ensure the count file exists, if not create it with initial value '0'
 if (!fs.existsSync(countFilePath)) {
