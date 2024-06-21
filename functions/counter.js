@@ -1,8 +1,21 @@
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('redis');
 
-let fileData = '';
-const countFilePath = path.join(__dirname, '../count.txt');
+const client = createClient({
+    password: 'llNCaogBXpxWdQXHkOnSwUMJZxz33btB',
+    socket: {
+        host: 'redis-12688.c52.us-east-1-4.ec2.redns.redis-cloud.com',
+        port: 12688
+    }
+});
+
+let connected = false;
+
+const connectToRedis = async () => {
+    if (!connected) {
+        await client.connect();
+        connected = true;
+    }
+};
 
 exports.handler = async (event, context) => {
     const { httpMethod, queryStringParameters } = event;
@@ -23,61 +36,77 @@ exports.handler = async (event, context) => {
         };
     }
 
+    await connectToRedis();
+
     if (httpMethod === 'GET') {
         if (!queryStringParameters || !queryStringParameters.q || queryStringParameters.q === '') {
-            // Read the current count from the file
+            // Read the current count from Redis
             try {
-                const data = fs.readFileSync(countFilePath, 'utf8');
-                let currentCount = parseInt(data, 10);
-                if (isNaN(currentCount)) {
-                    throw new Error('Invalid count value in file');
+                let currentCount = await client.get('count');
+                if (currentCount === null) {
+                    currentCount = 0;
+                } else {
+                    currentCount = parseInt(currentCount, 10);
                 }
+
                 currentCount += 1;
 
-                // Write the new count back to the file
-                fs.writeFileSync(countFilePath, currentCount.toString());
+                // Write the new count back to Redis
+                await client.set('count', currentCount.toString());
 
-                fileData = currentCount.toString(); // Update the in-memory count
                 return {
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({ value: currentCount }),
                 };
             } catch (err) {
-                console.error('Error reading or writing file:', err);
+                console.error('Error interacting with Redis:', err);
                 return {
                     statusCode: 500,
                     headers,
-                    body: 'Error reading or writing file',
+                    body: 'Error interacting with Redis',
                 };
             }
         } else if (queryStringParameters.q === 'reset') {
             // Reset the count
             try {
-                fs.writeFileSync(countFilePath, '0');
-                fileData = '0'; // Update the in-memory count
+                await client.set('count', '0');
                 return {
                     statusCode: 200,
                     headers,
                     body: JSON.stringify({ value: 0 }),
                 };
             } catch (err) {
-                console.error('Error writing file:', err);
+                console.error('Error interacting with Redis:', err);
                 return {
                     statusCode: 500,
                     headers,
-                    body: 'Error writing file',
+                    body: 'Error interacting with Redis',
                 };
             }
         } else {
             // Return current count
-            const data = fs.readFileSync(countFilePath, 'utf8');
-            let currentCount = parseInt(data, 10);
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ value: currentCount }),
-            };
+            try {
+                let currentCount = await client.get('count');
+                if (currentCount === null) {
+                    currentCount = 0;
+                } else {
+                    currentCount = parseInt(currentCount, 10);
+                }
+
+                return {
+                    statusCode: 200,
+                    headers,
+                    body: JSON.stringify({ value: currentCount }),
+                };
+            } catch (err) {
+                console.error('Error interacting with Redis:', err);
+                return {
+                    statusCode: 500,
+                    headers,
+                    body: 'Error interacting with Redis',
+                };
+            }
         }
     } else {
         return {
